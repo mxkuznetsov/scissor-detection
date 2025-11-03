@@ -39,8 +39,6 @@ body {
 
 .app-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
-  font-family: var(--font-chicago);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -82,22 +80,16 @@ body {
 
 .button-base:disabled {
   opacity: 0.6;
-  cursor: not-allowed;
-  background: var(--color-border);
-  color: var(--color-light);
 }
 
 .helper-text-base {
   text-align: center;
   margin: var(--spacing-md) 0;
   padding: var(--spacing-md) var(--spacing-xl);
-  border-radius: var(--border-radius);
-  font-family: var(--font-chicago);
 }
 
 .error-text {
-  color: var(--color-light);
-  background: var(--color-red);
+  color: var(--color-red);
 }
 
 .scissors-alert {
@@ -109,7 +101,6 @@ body {
   border-radius: var(--border-radius-sm);
   letter-spacing: 1px;
   text-transform: uppercase;
-  font-weight: bold;
 }
 
 .detection-overlay {
@@ -151,9 +142,7 @@ body {
   background-color: var(--label-bg);
   padding: var(--spacing-xs) var(--spacing-md);
   border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-sm);
-  font-family: var(--font-chicago);
-}
+  font-size: var(--font-size-sm);}
 
 .gallery-container {
   width: 100%;
@@ -239,7 +228,6 @@ body {
   background: var(--color-background);
   border-radius: var(--border-radius);
   border: 3px solid var(--color-border);
-  font-family: var(--font-chicago);
 }
 
 .video-display {
@@ -271,7 +259,6 @@ body {
   justify-content: center;
   background: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-border) 100%);
   color: var(--color-tertiary);
-  font-family: var(--font-chicago);
 }
 
 .video-placeholder-content,

@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import WebcamFeed from './WebcamFeed';
+import WebcamFeed from './components/WebcamFeed/WebcamFeed';
 
 const App: React.FC = () => {
     const [capturedImages, setCapturedImages] = useState<string[]>([]);
