@@ -12,10 +12,12 @@ const defaultProps = {
 
 describe('Video', () => {
   it('renders video element', () => {
-    render(<Video {...defaultProps} />);
+    const { container } = render(<Video {...defaultProps} />);
     
-    const video = screen.getByRole('application');
+    const video = container.querySelector('video');
     expect(video).toHaveClass('video-element');
+    expect(video).toHaveAttribute('autoplay');
+    expect(video).toHaveAttribute('playsinline');
   });
 
   it('shows loading status', () => {
@@ -26,16 +28,16 @@ describe('Video', () => {
   });
 
   it('shows video when streaming', () => {
-    render(<Video {...defaultProps} isStreaming={true} />);
+    const { container } = render(<Video {...defaultProps} isStreaming={true} />);
     
-    const video = screen.getByRole('application');
+    const video = container.querySelector('video');
     expect(video).toHaveStyle({ display: 'block' });
   });
 
   it('hides video when not streaming', () => {
-    render(<Video {...defaultProps} isStreaming={false} />);
+    const { container } = render(<Video {...defaultProps} isStreaming={false} />);
     
-    const video = screen.getByRole('application');
+    const video = container.querySelector('video');
     expect(video).toHaveStyle({ display: 'none' });
   });
 });
