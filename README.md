@@ -3,6 +3,7 @@
 ## About this app
 
 Scissors Detected is a React webapp that uses Tensorflow and YOLO to detect people and scissors in the webcam feed. When scissors are detected, a photo is captured as potential evidence for running with scissors. 
+Once the webcam feed is active, participants can hold up a pair of scissors to be captured by the feed.
 
 ## Quickstart
 
@@ -21,7 +22,7 @@ npm run build
 ```
 
 ## Troubleshooting
-- Refresh page
+- Refresh page to restart webcam feed
 - Confirm that camera permissions are granted
 - Make sure area is well-lit
 
