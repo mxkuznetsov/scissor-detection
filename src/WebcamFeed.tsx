@@ -95,50 +95,64 @@ const StatusDisplay: React.FC<StatusDisplayProps> = ({
 interface VideoDisplayProps {
     videoRef: React.RefObject<HTMLVideoElement | null>;
     isStreaming: boolean;
+    isLoading: boolean;
     detectedPersons: any[];
     capturedImage: string | null;
+    hasScissorsDetected: boolean;
 }
 
 const VideoDisplay: React.FC<VideoDisplayProps> = ({
     videoRef,
     isStreaming,
+    isLoading,
     detectedPersons,
-    capturedImage
+    capturedImage,
+    hasScissorsDetected
 }) => {
     return (
-        <div className="video-container">
-            {capturedImage ? (
-                <img src={capturedImage} alt="Captured" className="preview-image" />
-            ) : (
-                <>
-                    <video
-                        ref={videoRef}
-                        autoPlay
-                        muted
-                        playsInline
-                        className="webcam-video"
-                        style={{
-                            display: isStreaming ? 'block' : 'none'
-                        }}
-                    />
-                    {isStreaming && detectedPersons.length > 0 && (
-                        <div className="detection-overlay">
-                            {detectedPersons.map((detection, index) => (
-                                <div
-                                    key={`${detection.timestamp.getTime()}-${index}`}
-                                    className={`bounding-box ${detection.className}`}
-                                    style={{
-                                        left: `${detection.bbox[0]}px`,
-                                        top: `${detection.bbox[1]}px`,
-                                        width: `${detection.bbox[2]}px`,
-                                        height: `${detection.bbox[3]}px`
-                                    }}
-                                    data-label={`${detection.className} ${Math.round(detection.confidence * 100)}%`}
-                                />
-                            ))}
-                        </div>
-                    )}
-                </>
+        <div className={`video-display ${hasScissorsDetected ? 'scissors-detected' : ''}`}>
+            {!isStreaming && !isLoading && (
+                <div className="video-placeholder">
+                    <div className="video-placeholder-content">
+                        <div className="video-placeholder-icon">📷</div>
+                        <p>Click "Start Camera" to begin</p>
+                    </div>
+                </div>
+            )}
+            {isLoading && (
+                <div className="video-loading">
+                    <div className="video-loading-content">
+                        <div className="video-loading-spinner"></div>
+                        <p>Starting camera...</p>
+                    </div>
+                </div>
+            )}
+            <video
+                ref={videoRef}
+                autoPlay
+                muted
+                playsInline
+                className="video-element"
+                style={{
+                    display: isStreaming ? 'block' : 'none'
+                }}
+            />
+            {isStreaming && detectedPersons.length > 0 && (
+                <div className="detection-overlay">
+                    {detectedPersons.map((detection, index) => (
+                        <div
+                            key={`${detection.timestamp.getTime()}-${index}`}
+                            className={`bounding-box ${detection.className}`}
+                            style={{
+                                left: `${detection.bbox[0]}px`,
+                                top: `${detection.bbox[1]}px`,
+                                width: `${detection.bbox[2]}px`,
+                                height: `${detection.bbox[3]}px`
+                            }}
+                            data-label={`${detection.className} ${Math.round(detection.confidence * 100)}%`}
+                        />
+                    ))}
+                </div>
             )}
         </div>
     );
@@ -146,45 +160,27 @@ const VideoDisplay: React.FC<VideoDisplayProps> = ({
 
 interface ControlsProps {
     error: string | null;
-    capturedImage: string | null;
     isStreaming: boolean;
+    isLoading: boolean;
     onStartWebcam: () => void;
-    onCaptureImage: () => void;
-    onDownloadImage: () => void;
-    onReset: () => void;
 }
 
 const Controls: React.FC<ControlsProps> = ({
     error,
-    capturedImage,
     isStreaming,
+    isLoading,
     onStartWebcam,
-    onCaptureImage,
-    onDownloadImage,
-    onReset
 }) => {
     return (
         <div className="controls-container">
             {error && (
-                <button onClick={onStartWebcam} className="button-base webcam-button">
+                <button onClick={onStartWebcam} className="button-base video-button">
                     Retry camera
                 </button>
             )}
-
-            {capturedImage && (
-                <>
-                    <button onClick={onDownloadImage} className="button-base webcam-button">
-                        Download image
-                    </button>
-                    <button onClick={onReset} className="button-base webcam-button">
-                        Reset
-                    </button>
-                </>
-            )}
-
-            {!error && !capturedImage && isStreaming && (
-                <button onClick={onCaptureImage} className="button-base webcam-button">
-                    Snag evidence
+            {!isStreaming && !isLoading && !error && (
+                <button onClick={onStartWebcam} className="button-base video-button">
+                    Start Camera
                 </button>
             )}
         </div>
@@ -192,11 +188,12 @@ const Controls: React.FC<ControlsProps> = ({
 };
 
 const WebcamFeed: React.FC<WebcamFeedProps> = ({ onImageCapture }) => {
-    const [stream, setStream] = useState<MediaStream | null>(null);
     const [capturedImage, setCapturedImage] = useState<string | null>(null);
     const [isStreaming, setIsStreaming] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [hasAutoCapture, setHasAutoCapture] = useState<boolean>(false);
+    const [showScissorsAlert, setShowScissorsAlert] = useState<boolean>(false);
 
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -236,7 +233,7 @@ const WebcamFeed: React.FC<WebcamFeedProps> = ({ onImageCapture }) => {
     const waitForVideoLoad = useCallback((video: HTMLVideoElement): Promise<void> => {
         return new Promise<void>((resolve, reject) => {
             const onLoadedMetadata = () => {
-                console.log('🎥 Video metadata loaded');
+                console.log('Video metadata loaded');
                 video.removeEventListener('loadedmetadata', onLoadedMetadata);
                 video.removeEventListener('error', onError);
                 setIsStreaming(true);
@@ -269,10 +266,9 @@ const WebcamFeed: React.FC<WebcamFeedProps> = ({ onImageCapture }) => {
 
             if (videoRef.current) {
                 videoRef.current.srcObject = mediaStream;
-                setStream(mediaStream);
 
                 await waitForVideoLoad(videoRef.current);
-                console.log('🎥 Webcam started successfully');
+                console.log('Webcam started successfully');
             }
 
         } catch (err) {
@@ -287,23 +283,6 @@ const WebcamFeed: React.FC<WebcamFeedProps> = ({ onImageCapture }) => {
             startWebcam();
         }
     }, [startWebcam, isStreaming, isLoading, error]);
-
-    const stopWebcam = useCallback((): void => {
-        console.log('Stopping webcam...');
-
-        if (stream) {
-            stream.getTracks().forEach(track => track.stop());
-            setStream(null);
-        }
-
-        if (videoRef.current) {
-            videoRef.current.srcObject = null;
-        }
-
-        setIsStreaming(false);
-        setError(null);
-        console.log('🎥 Webcam stopped successfully');
-    }, [stream]);
 
     const captureImage = useCallback((): void => {
         if (!videoRef.current || !canvasRef.current) {
@@ -339,12 +318,6 @@ const WebcamFeed: React.FC<WebcamFeedProps> = ({ onImageCapture }) => {
         }
     }, [onImageCapture, handleError]);
 
-    const resetState = useCallback((): void => {
-        stopWebcam();
-        setCapturedImage(null);
-        setError(null);
-    }, [stopWebcam]);
-
     const getDetectionSummary = useCallback(() => {
         if (detectedPersons.length === 0) return '';
 
@@ -362,33 +335,36 @@ const WebcamFeed: React.FC<WebcamFeedProps> = ({ onImageCapture }) => {
 
     const hasScissorsDetected = detectedPersons.some(det => det.className === 'scissors');
 
-    const downloadImage = useCallback((): void => {
-        if (!capturedImage) return;
+    useEffect(() => {
+        if (hasScissorsDetected && !capturedImage && !hasAutoCapture && isStreaming) {
+            console.log('✂️ Scissors detected!');
+            setHasAutoCapture(true);
+            setShowScissorsAlert(true);
+            captureImage();
 
-        try {
-            const link = document.createElement('a');
-            link.download = `webcam-capture-${new Date().toISOString()}.png`;
-            link.href = capturedImage;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        } catch (err) {
-            handleError(err, 'Failed to download image');
+            // Hide alert after 5 seconds
+            const timer = setTimeout(() => {
+                setShowScissorsAlert(false);
+            }, 5000);
+
+            return () => clearTimeout(timer);
         }
-    }, [capturedImage, handleError]);
+    }, [hasScissorsDetected, capturedImage, hasAutoCapture, isStreaming, captureImage]);
 
     return (
-        <div className="webcam-component-container">
+        <div className="video-component">
             {error && <p className="helper-text-base error-text">{error}</p>}
 
             <VideoDisplay
                 videoRef={videoRef}
                 isStreaming={isStreaming}
+                isLoading={isLoading}
                 detectedPersons={detectedPersons}
                 capturedImage={capturedImage}
+                hasScissorsDetected={hasScissorsDetected}
             />
 
-            <canvas ref={canvasRef} className="webcam-canvas" />
+            <canvas ref={canvasRef} className="video-canvas" />
 
             <StatusDisplay
                 isLoading={isLoading}
@@ -400,7 +376,7 @@ const WebcamFeed: React.FC<WebcamFeedProps> = ({ onImageCapture }) => {
                 capturedImage={capturedImage}
             />
 
-            {isStreaming && hasScissorsDetected && (
+            {showScissorsAlert && (
                 <div className="helper-text-base scissors-alert">
                     ✂️ Oh boy! Scissors on the loose! ✂️
                 </div>
@@ -408,12 +384,9 @@ const WebcamFeed: React.FC<WebcamFeedProps> = ({ onImageCapture }) => {
 
             <Controls
                 error={error}
-                capturedImage={capturedImage}
                 isStreaming={isStreaming}
+                isLoading={isLoading}
                 onStartWebcam={startWebcam}
-                onCaptureImage={captureImage}
-                onDownloadImage={downloadImage}
-                onReset={resetState}
             />
         </div>
     );
