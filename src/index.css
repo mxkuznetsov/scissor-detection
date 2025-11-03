@@ -1,13 +1,469 @@
+/* ==============================================
+   FROG TAKEHOME APP - UNIFIED CSS
+   ============================================== */
+
+/* CSS Custom Properties */
+:root {
+  /* Typography */
+  --font-chicago: 'Chicago', 'Silkscreen', 'Courier New', monospace;
+  --font-system: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  
+  /* Design System */
+  --border-radius: 20px;
+  
+  /* Vintage Apple Colors - AAA Accessible */
+  --color-primary: #F7F7F2;      /* Apple Beige/Cream */
+  --color-secondary: #B0B0B0;    /* Apple Silver (darkened for contrast) */
+  --color-tertiary: #1A1A1A;     /* Apple Dark Gray (darkened for AAA) */
+  --color-accent: #D63031;       /* Apple Red (darkened for AAA compliance) */
+  --color-light: #FEFEFE;        /* Apple White */
+  --color-background: rgba(247, 247, 242, 0.95); /* More opaque beige */
+  --color-border: #606060;       /* Apple Medium Gray (darkened) */
+  
+  /* Rainbow Apple Colors (AAA accessible versions) */
+  --apple-red: #D63031;
+  --apple-orange: #E17000;
+  --apple-yellow: #F39C12;
+  --apple-green: #00A651;
+  --apple-blue: #0984E3;
+  --apple-purple: #6C5CE7;
+  
+  /* Spacing */
+  --spacing-sm: 10px;
+  --spacing-md: 15px;
+  --spacing-lg: 20px;
+  --spacing-xl: 30px;
+}
+
+/* ==============================================
+   GLOBAL STYLES
+   ============================================== */
+
+* {
+  transition: all 0.3s ease;
+}
+
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: var(--font-chicago);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
 }
+
+::-webkit-scrollbar-track {
+  background: rgba(192, 192, 192, 0.1);
+  border-radius: var(--border-radius);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: var(--border-radius);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-tertiary);
+}
+
+/* ==============================================
+   APP LAYOUT
+   ============================================== */
+
+.app-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  font-family: var(--font-chicago);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: var(--spacing-lg);
+}
+
+.ascii-background {
+  position: fixed;
+  bottom: var(--spacing-lg);
+  right: var(--spacing-lg);
+  opacity: 0.3;
+  font-size: 10px;
+  line-height: 1;
+  color: var(--color-tertiary);
+  white-space: pre;
+  font-family: monospace;
+  transform: scale(1);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.main-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 1200px;
+}
+
+/* ==============================================
+   HEADER STYLES
+   ============================================== */
+
+.app-header {
+  text-align: center;
+  margin-bottom: var(--spacing-xl);
+  width: 100%;
+}
+
+.app-title {
+  color: var(--color-secondary);
+  margin-bottom: var(--spacing-sm);
+  font-size: 2.5em;
+  font-weight: bold;
+}
+
+.app-subtitle {
+  color: var(--color-tertiary);
+  font-size: 1.1em;
+  margin-bottom: var(--spacing-lg);
+}
+
+/* ==============================================
+   SHARED COMPONENTS
+   ============================================== */
+
+/* Button Base Class */
+.button-base {
+  background: var(--color-secondary);
+  color: var(--color-tertiary);
+  border: 2px solid var(--color-border);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  font-size: 16px;
+  font-weight: bold;
+  font-family: var(--font-chicago);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  position: relative;
+  overflow: hidden;
+}
+
+.button-base:hover {
+  transform: translateY(-2px);
+  background: var(--color-primary);
+  border-color: var(--color-accent);
+  color: var(--color-tertiary);
+}
+
+.button-base:active {
+  transform: translateY(-1px);
+  background: var(--color-accent);
+  border-color: var(--color-primary);
+  color: var(--color-light);
+}
+
+.button-base:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  background: var(--color-border);
+  color: var(--color-light);
+}
+
+/* Helper Text Base Class */
+.helper-text-base {
+  font-size: 16px;
+  font-family: var(--font-chicago);
+  font-weight: bold;
+  text-align: center;
+  margin: var(--spacing-md) 0;
+  padding: 12px var(--spacing-lg);
+  border-radius: var(--border-radius);
+  border: 2px solid transparent;
+  backdrop-filter: blur(10px);
+  letter-spacing: 0.5px;
+  position: relative;
+}
+
+/* ==============================================
+   WEBCAM COMPONENT
+   ============================================== */
+
+/* ==============================================
+   DETECTION SYSTEM
+   ============================================== */
+
+.detection-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  z-index: 3;
+}
+
+.bounding-box {
+  position: absolute;
+  border: 3px solid transparent;
+  pointer-events: none;
+  z-index: 10;
+  border-radius: var(--border-radius);
+}
+
+.bounding-box.person {
+  border-color: var(--apple-green);
+}
+
+.bounding-box.scissors {
+  border-color: var(--apple-red);
+}
+
+.bounding-box::after {
+  content: attr(data-label);
+  position: absolute;
+  top: -35px;
+  left: 0;
+  color: var(--color-light);
+  background-color: rgba(64, 64, 64, 0.9);
+  padding: 6px 12px;
+  border-radius: var(--border-radius);
+  font-size: 14px;
+  font-weight: bold;
+  font-family: var(--font-chicago);
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.bounding-box.person::after {
+  background-color: var(--apple-green);
+}
+
+.bounding-box.scissors::after {
+  background-color: var(--apple-red);
+}
+
+/* ==============================================
+   HELPER TEXT VARIANTS
+   ============================================== */
+
+.status-text {
+  /* Extends .helper-text-base styles */
+  color: var(--color-tertiary);
+  background: rgba(247, 247, 242, 0.9);
+  border-color: var(--apple-blue);
+}
+
+.status-text::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: transparent;
+  border-radius: var(--border-radius);
+  pointer-events: none;
+}
+
+.error-text {
+  /* Extends .helper-text-base styles */
+  color: var(--color-tertiary);
+  background: rgba(255, 107, 53, 0.2);
+  border-color: var(--apple-red);
+}
+
+.scissors-alert {
+  /* Extends .helper-text-base styles */
+  color: var(--color-tertiary);
+  font-size: 18px;
+  background: var(--apple-yellow);
+  padding: var(--spacing-md) 25px;
+  border: 3px solid var(--apple-orange);
+  letter-spacing: 1px;
+  animation: scissorsGlow 2s ease-in-out infinite alternate;
+  text-transform: uppercase;
+}
+
+@keyframes scissorsGlow {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.02);
+  }
+}
+
+/* ==============================================
+   GALLERY COMPONENT
+   ============================================== */
+
+.gallery-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.gallery-title {
+  color: var(--color-tertiary);
+  margin: 0;
+  font-size: 1.5em;
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 20px;
+}
+
+.gallery-item {
+  position: relative;
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  border: 3px solid var(--apple-purple);
+  background: var(--color-light);
+  padding: var(--spacing-sm);
+}
+
+.gallery-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: var(--border-radius);
+  filter: sepia(10%) contrast(105%) brightness(102%);
+}
+
+.gallery-label {
+  position: absolute;
+  bottom: var(--spacing-md);
+  left: var(--spacing-md);
+  background: rgba(64, 64, 64, 0.9);
+  color: var(--color-light);
+  padding: 6px 12px;
+  border-radius: var(--border-radius);
+  font-size: 14px;
+  font-weight: bold;
+  font-family: var(--font-chicago);
+  letter-spacing: 0.5px;
+}
+
+/* ==============================================
+   WEBCAM COMPONENT
+   ============================================== */
+
+.webcam-container {
+  max-width: 600px;
+  margin: 0 auto var(--spacing-xl) auto;
+}
+
+.webcam-component-container {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-xl);
+  background: var(--color-background);
+  border-radius: var(--border-radius);
+  border: 3px solid var(--color-border);
+  backdrop-filter: blur(10px);
+  font-family: var(--font-chicago);
+}
+
+.webcam-component-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: var(--border-radius);
+  pointer-events: none;
+}
+
+.video-container {
+  position: relative;
+  display: inline-block;
+  border-radius: var(--border-radius);
+  overflow: hidden;
+}
+
+.webcam-video {
+  width: 100%;
+  max-width: 640px;
+  height: auto;
+  border-radius: var(--border-radius);
+  border: 4px solid var(--apple-red);
+  background: var(--color-tertiary);
+  filter: sepia(10%) contrast(105%) brightness(103%);
+  position: relative;
+  z-index: 2;
+}
+
+.preview-image {
+  width: 100%;
+  max-width: 640px;
+  height: auto;
+  border-radius: var(--border-radius);
+  border: 4px solid var(--apple-red);
+  filter: sepia(15%) contrast(110%) brightness(105%);
+}
+
+.webcam-canvas {
+  display: none;
+}
+
+/* Webcam Button Variant */
+.webcam-button {
+  /* Extends .button-base styles */
+  border: 3px solid var(--color-border);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-md) var(--spacing-xl);
+  background: var(--apple-blue);
+  color: var(--color-light);
+}
+
+.webcam-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: transparent;
+  pointer-events: none;
+}
+
+.webcam-button:hover {
+  transform: translateY(-3px);
+  background: var(--color-primary);
+  border-color: var(--color-accent);
+  color: var(--color-tertiary);
+}
+
+.webcam-button:active {
+  transform: translateY(-1px);
+  background: var(--color-accent);
+  border-color: var(--color-primary);
+  color: var(--color-light);
+}
+
+.controls-container {
+  display: flex;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
