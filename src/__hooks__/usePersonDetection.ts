@@ -42,14 +42,11 @@ export const usePersonDetection = () => {
     // Initialize TensorFlow.js and load the model
     const initializeModel = useCallback(async (): Promise<void> => {
         try {
-            console.log('🧠 Initializing TensorFlow.js...');
+            setError(null);
 
             // Set backend to WebGL for better performance
             await tf.setBackend('webgl');
             await tf.ready();
-
-            console.log('📥 Loading YOLOv8 model from:', YOLO_CONFIG.modelUrl);
-            setError(null);
 
             // Load the YOLOv8 model
             const model = await tf.loadGraphModel(YOLO_CONFIG.modelUrl);
@@ -57,14 +54,11 @@ export const usePersonDetection = () => {
             setModelLoaded(true);
 
             // Warm up the model with a dummy input
-            console.log('🔥 Warming up model...');
             const dummyInput = tf.zeros([1, YOLO_CONFIG.inputSize, YOLO_CONFIG.inputSize, 3]);
             await model.predict(dummyInput);
             dummyInput.dispose();
 
-            console.log('✅ YOLOv8 model loaded and ready for person detection!');
         } catch (err) {
-            console.error('❌ Error loading model:', err);
             setError(`Failed to load YOLOv8 model: ${err instanceof Error ? err.message : 'Unknown error'}`);
             setModelLoaded(false);
         }
@@ -151,8 +145,8 @@ export const usePersonDetection = () => {
         videoHeight: number
     ): ObjectDetection[] => {
         // YOLOv8 output format: [1, 84, 8400] where 84 = [x, y, w, h] + 80 class scores
-        const predictions = output.squeeze(); // Remove batch dimension: [84, 8400]
-        const transposed = predictions.transpose([1, 0]); // [8400, 84]
+        const predictions = output.squeeze();
+        const transposed = predictions.transpose([1, 0]);
 
         const data = transposed.dataSync();
         const numDetections = transposed.shape[0];
@@ -167,7 +161,7 @@ export const usePersonDetection = () => {
                 const classConfidence = data[offset + 4 + classIndex];
 
                 if (classConfidence >= YOLO_CONFIG.confidenceThreshold) {
-                    // Extract bounding box (center format)
+                    // Extract bounding box coordinates
                     const centerX = data[offset + 0];
                     const centerY = data[offset + 1];
                     const width = data[offset + 2];
@@ -237,7 +231,6 @@ export const usePersonDetection = () => {
     // Main detection function
     const detectPersons = useCallback(async (videoElement: HTMLVideoElement): Promise<void> => {
         if (!modelRef.current || !modelLoaded) {
-            console.warn('⚠️ Model not loaded yet');
             return;
         }
 
@@ -257,16 +250,11 @@ export const usePersonDetection = () => {
             // Update state with new detections
             setDetectedPersons(persons);
 
-            if (persons.length > 0) {
-                console.log(`👤 Detected ${persons.length} person(s)`);
-            }
-
             // Clean up tensors
             inputTensor.dispose();
             output.dispose();
 
         } catch (err) {
-            console.error('❌ Error during person detection:', err);
             setError(`Detection failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
         } finally {
             setIsDetecting(false);
@@ -281,7 +269,6 @@ export const usePersonDetection = () => {
         }
         setModelLoaded(false);
         setDetectedPersons([]);
-        console.log('🧹 YOLOv8 model cleaned up');
     }, []);
 
     // Initialize model on mount

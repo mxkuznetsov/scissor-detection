@@ -1,5 +1,12 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { usePersonDetection } from '../../__hooks__/usePersonDetection';
+import VideoDisplay from '../Video/Video';
+
+interface WebcamFeedProps {
+    onImageCapture?: (imageDataUrl: string) => void;
+}
+
+type WebcamError = 'NotAllowedError' | 'NotFoundError' | 'NotReadableError' | 'OverconstrainedError' | 'SecurityError';
 
 const VIDEO_CONSTRAINTS = {
     video: {
@@ -11,12 +18,6 @@ const VIDEO_CONSTRAINTS = {
 } as const;
 
 const DETECTION_INTERVAL = 500;
-
-interface WebcamFeedProps {
-    onImageCapture?: (imageDataUrl: string) => void;
-}
-
-type WebcamError = 'NotAllowedError' | 'NotFoundError' | 'NotReadableError' | 'OverconstrainedError' | 'SecurityError';
 
 const ERROR_MESSAGES: Record<WebcamError, string> = {
     NotAllowedError: 'Camera permission denied. Please allow camera access.',
@@ -30,8 +31,6 @@ const createErrorHandler = (setError: (error: string) => void, setIsStreaming: (
     return (err: any, context: string = ''): void => {
         const contextPrefix = context ? `${context}: ` : '';
 
-        console.error(`${contextPrefix}Error:`, err);
-
         if (err instanceof Error && err.name in ERROR_MESSAGES) {
             setError(`${contextPrefix}${ERROR_MESSAGES[err.name as WebcamError]}`);
         } else if (err?.message) {
@@ -42,149 +41,6 @@ const createErrorHandler = (setError: (error: string) => void, setIsStreaming: (
 
         setIsStreaming(false);
     };
-};
-
-interface StatusDisplayProps {
-    isLoading: boolean;
-    isStreaming: boolean;
-    modelLoaded: boolean;
-    isDetecting: boolean;
-    modelError: string | null;
-    detectionSummary: string;
-    capturedImage: string | null;
-}
-
-const StatusDisplay: React.FC<StatusDisplayProps> = ({
-    isLoading,
-    isStreaming,
-    modelLoaded,
-    isDetecting,
-    modelError,
-    detectionSummary,
-    capturedImage
-}) => {
-    if (capturedImage) {
-        console.log('Image captured successfully!');
-        return null;
-    }
-
-    if (!isStreaming && !isLoading) {
-        console.log('Initializing camera...');
-        return null;
-    }
-
-    if (isLoading) {
-        console.log('Starting camera...');
-        return null;
-    }
-
-    if (isStreaming) {
-        const aiStatus = modelLoaded ?
-            `AI Detection: ${isDetecting ? 'Running' : 'Ready'}${detectionSummary}` :
-            'Loading AI model...';
-
-        const errorStatus = modelError ? 'AI model error' : '';
-
-        console.log(`Camera is active ${aiStatus} ${errorStatus}`.trim());
-        return null;
-    }
-
-    return null;
-};
-
-interface VideoDisplayProps {
-    videoRef: React.RefObject<HTMLVideoElement | null>;
-    isStreaming: boolean;
-    isLoading: boolean;
-    detectedPersons: any[];
-    capturedImage: string | null;
-    hasScissorsDetected: boolean;
-}
-
-const VideoDisplay: React.FC<VideoDisplayProps> = ({
-    videoRef,
-    isStreaming,
-    isLoading,
-    detectedPersons,
-    capturedImage,
-    hasScissorsDetected
-}) => {
-    return (
-        <div className={`video-display ${hasScissorsDetected ? 'scissors-detected' : ''}`}>
-            {!isStreaming && !isLoading && (
-                <div className="video-placeholder">
-                    <div className="video-placeholder-content">
-                        <div className="video-placeholder-icon">📷</div>
-                        <p>Click "Start Camera" to begin</p>
-                    </div>
-                </div>
-            )}
-            {isLoading && (
-                <div className="video-loading">
-                    <div className="video-loading-content">
-                        <div className="video-loading-spinner"></div>
-                        <p>Starting camera...</p>
-                    </div>
-                </div>
-            )}
-            <video
-                ref={videoRef}
-                autoPlay
-                muted
-                playsInline
-                className="video-element"
-                style={{
-                    display: isStreaming ? 'block' : 'none'
-                }}
-            />
-            {isStreaming && detectedPersons.length > 0 && (
-                <div className="detection-overlay">
-                    {detectedPersons.map((detection, index) => (
-                        <div
-                            key={`${detection.timestamp.getTime()}-${index}`}
-                            className={`bounding-box ${detection.className}`}
-                            style={{
-                                left: `${detection.bbox[0]}px`,
-                                top: `${detection.bbox[1]}px`,
-                                width: `${detection.bbox[2]}px`,
-                                height: `${detection.bbox[3]}px`
-                            }}
-                            data-label={`${detection.className} ${Math.round(detection.confidence * 100)}%`}
-                        />
-                    ))}
-                </div>
-            )}
-        </div>
-    );
-};
-
-interface ControlsProps {
-    error: string | null;
-    isStreaming: boolean;
-    isLoading: boolean;
-    onStartWebcam: () => void;
-}
-
-const Controls: React.FC<ControlsProps> = ({
-    error,
-    isStreaming,
-    isLoading,
-    onStartWebcam,
-}) => {
-    return (
-        <div className="controls-container">
-            {error && (
-                <button onClick={onStartWebcam} className="button-base video-button">
-                    Retry camera
-                </button>
-            )}
-            {!isStreaming && !isLoading && !error && (
-                <button onClick={onStartWebcam} className="button-base video-button">
-                    Start Camera
-                </button>
-            )}
-        </div>
-    );
 };
 
 const WebcamFeed: React.FC<WebcamFeedProps> = ({ onImageCapture }) => {
@@ -198,7 +54,7 @@ const WebcamFeed: React.FC<WebcamFeedProps> = ({ onImageCapture }) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
-    const { detectedPersons, isDetecting, modelLoaded, error: modelError, detectPersons } = usePersonDetection();
+    const { detectedPersons, modelLoaded, error: modelError, detectPersons } = usePersonDetection();
 
     const handleError = createErrorHandler(setError, setIsStreaming);
 
@@ -233,7 +89,6 @@ const WebcamFeed: React.FC<WebcamFeedProps> = ({ onImageCapture }) => {
     const waitForVideoLoad = useCallback((video: HTMLVideoElement): Promise<void> => {
         return new Promise<void>((resolve, reject) => {
             const onLoadedMetadata = () => {
-                console.log('Video metadata loaded');
                 video.removeEventListener('loadedmetadata', onLoadedMetadata);
                 video.removeEventListener('error', onError);
                 setIsStreaming(true);
@@ -256,7 +111,6 @@ const WebcamFeed: React.FC<WebcamFeedProps> = ({ onImageCapture }) => {
         try {
             setIsLoading(true);
             setError(null);
-            console.log('Starting webcam...');
 
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 throw new Error('Camera access not supported in this browser');
@@ -266,9 +120,7 @@ const WebcamFeed: React.FC<WebcamFeedProps> = ({ onImageCapture }) => {
 
             if (videoRef.current) {
                 videoRef.current.srcObject = mediaStream;
-
                 await waitForVideoLoad(videoRef.current);
-                console.log('Webcam started successfully');
             }
 
         } catch (err) {
@@ -311,38 +163,19 @@ const WebcamFeed: React.FC<WebcamFeedProps> = ({ onImageCapture }) => {
             if (onImageCapture) {
                 onImageCapture(imageDataUrl);
             }
-
-            console.log('Image captured successfully');
         } catch (err) {
             handleError(err, 'Failed to capture image');
         }
     }, [onImageCapture, handleError]);
 
-    const getDetectionSummary = useCallback(() => {
-        if (detectedPersons.length === 0) return '';
-
-        const counts = detectedPersons.reduce((acc, det) => {
-            acc[det.className] = (acc[det.className] || 0) + 1;
-            return acc;
-        }, {} as Record<string, number>);
-
-        const summary = Object.entries(counts)
-            .map(([className, count]) => `${count} ${className}${count !== 1 ? 's' : ''}`)
-            .join(', ');
-
-        return ` (${summary} detected)`;
-    }, [detectedPersons]);
-
     const hasScissorsDetected = detectedPersons.some(det => det.className === 'scissors');
 
     useEffect(() => {
         if (hasScissorsDetected && !capturedImage && !hasAutoCapture && isStreaming) {
-            console.log('✂️ Scissors detected!');
             setHasAutoCapture(true);
             setShowScissorsAlert(true);
             captureImage();
 
-            // Hide alert after 5 seconds
             const timer = setTimeout(() => {
                 setShowScissorsAlert(false);
             }, 5000);
@@ -365,29 +198,19 @@ const WebcamFeed: React.FC<WebcamFeedProps> = ({ onImageCapture }) => {
             />
 
             <canvas ref={canvasRef} className="video-canvas" />
-
-            <StatusDisplay
-                isLoading={isLoading}
-                isStreaming={isStreaming}
-                modelLoaded={modelLoaded}
-                isDetecting={isDetecting}
-                modelError={modelError}
-                detectionSummary={getDetectionSummary()}
-                capturedImage={capturedImage}
-            />
-
             {showScissorsAlert && (
                 <div className="helper-text-base scissors-alert">
                     ✂️ Oh boy! Scissors on the loose! ✂️
                 </div>
             )}
 
-            <Controls
-                error={error}
-                isStreaming={isStreaming}
-                isLoading={isLoading}
-                onStartWebcam={startWebcam}
-            />
+            <div className="controls-container">
+                {error && (
+                    <button onClick={startWebcam} className="button-base video-button">
+                        Retry camera
+                    </button>
+                )}
+            </div>
         </div>
     );
 };
