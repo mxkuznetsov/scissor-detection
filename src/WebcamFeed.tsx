@@ -1,5 +1,6 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import styled from 'styled-components';
+import { usePersonDetection } from './usePersonDetection';
 
 // Define styled components for styling (from Medium article)
 const WebcamContainer = styled.div`
@@ -24,6 +25,53 @@ const WebcamVideo = styled.video`
   border-radius: 15px;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
   background: #000;
+`;
+
+const VideoContainer = styled.div`
+  position: relative;
+  display: inline-block;
+`;
+
+const DetectionOverlay = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  border-radius: 15px;
+  overflow: hidden;
+`;
+
+const BoundingBox = styled.div<{ 
+  x: number; 
+  y: number; 
+  width: number; 
+  height: number; 
+  confidence: number 
+}>`
+  position: absolute;
+  left: ${props => props.x}px;
+  top: ${props => props.y}px;
+  width: ${props => props.width}px;
+  height: ${props => props.height}px;
+  border: 3px solid #00ff00;
+  border-radius: 4px;
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+  
+  &::after {
+    content: 'Person ${props => Math.round(props.confidence * 100)}%';
+    position: absolute;
+    top: -25px;
+    left: 0;
+    background: rgba(0, 255, 0, 0.8);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    white-space: nowrap;
+  }
 `;
 
 const PreviewImg = styled.img`
@@ -111,6 +159,32 @@ const WebcamFeed: React.FC<WebcamFeedProps> = ({ onImageCapture }) => {
     // Refs with TypeScript types
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
+
+    // Person detection hook
+    const { detectedPersons, isDetecting, modelLoaded, error: modelError, detectPersons } = usePersonDetection();
+
+    // Effect to run person detection when video is streaming
+    useEffect(() => {
+        let detectionInterval: NodeJS.Timeout | null = null;
+
+        if (isStreaming && videoRef.current && modelLoaded) {
+            detectionInterval = setInterval(async () => {
+                if (videoRef.current) {
+                    try {
+                        await detectPersons(videoRef.current);
+                    } catch (err) {
+                        console.error('Detection error:', err);
+                    }
+                }
+            }, 500); // Run detection every 500ms
+        }
+
+        return () => {
+            if (detectionInterval) {
+                clearInterval(detectionInterval);
+            }
+        };
+    }, [isStreaming, modelLoaded, detectPersons]);
 
     // Start webcam function (based on Medium article)
     const startWebcam = useCallback(async (): Promise<void> => {
@@ -314,15 +388,31 @@ const WebcamFeed: React.FC<WebcamFeedProps> = ({ onImageCapture }) => {
             ) : (
                 // Show webcam feed (Medium article pattern)
                 <>
-                    <WebcamVideo
-                        ref={videoRef}
-                        autoPlay
-                        muted
-                        playsInline
-                        style={{
-                            display: isStreaming ? 'block' : 'none'
-                        }}
-                    />
+                    <VideoContainer>
+                        <WebcamVideo
+                            ref={videoRef}
+                            autoPlay
+                            muted
+                            playsInline
+                            style={{
+                                display: isStreaming ? 'block' : 'none'
+                            }}
+                        />
+                        {isStreaming && detectedPersons.length > 0 && (
+                            <DetectionOverlay>
+                                {detectedPersons.map((detection, index) => (
+                                    <BoundingBox
+                                        key={`${detection.timestamp.getTime()}-${index}`}
+                                        x={detection.bbox[0]}
+                                        y={detection.bbox[1]}
+                                        width={detection.bbox[2]}
+                                        height={detection.bbox[3]}
+                                        confidence={detection.confidence}
+                                    />
+                                ))}
+                            </DetectionOverlay>
+                        )}
+                    </VideoContainer>
                     <WebcamCanvas ref={canvasRef} />
 
                     {!isStreaming && !isLoading && (
@@ -334,7 +424,22 @@ const WebcamFeed: React.FC<WebcamFeedProps> = ({ onImageCapture }) => {
                     )}
 
                     {isStreaming && (
-                        <StatusText>🟢 Camera is active</StatusText>
+                        <StatusText>
+                            🟢 Camera is active
+                            {modelLoaded ? (
+                                <span style={{ marginLeft: '10px' }}>
+                                    🤖 AI Detection: {isDetecting ? 'Running' : 'Ready'} 
+                                    {detectedPersons.length > 0 && ` (${detectedPersons.length} person${detectedPersons.length !== 1 ? 's' : ''} detected)`}
+                                </span>
+                            ) : (
+                                <span style={{ marginLeft: '10px' }}>🔄 Loading AI model...</span>
+                            )}
+                            {modelError && (
+                                <span style={{ marginLeft: '10px', color: '#ff6b6b' }}>
+                                    ⚠️ AI model error
+                                </span>
+                            )}
+                        </StatusText>
                     )}
 
                     <ControlsContainer>
